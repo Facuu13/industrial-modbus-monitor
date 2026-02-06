@@ -1,0 +1,33 @@
+menu "Industrial Modbus Monitor - Thresholds"
+
+config THRESH_UNDERVOLT_V
+    int "Undervoltage threshold (V)"
+    default 200
+    range 0 400
+
+config THRESH_OVERVOLT_V
+    int "Overvoltage threshold (V)"
+    default 250
+    range 0 400
+
+config THRESH_OVERCURR_WARN_A_X100
+    int "Overcurrent WARN (A x100)"
+    default 1200
+    range 0 10000
+
+config THRESH_OVERCURR_CRIT_A_X100
+    int "Overcurrent CRIT (A x100)"
+    default 1800
+    range 0 10000
+
+config THRESH_OVERTEMP_WARN_C_X10
+    int "Overtemperature WARN (C x10)"
+    default 700
+    range -400 2000
+
+config THRESH_OVERTEMP_CRIT_C_X10
+    int "Overtemperature CRIT (C x10)"
+    default 850
+    range -400 2000
+
+endmenu

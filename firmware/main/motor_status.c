@@ -1,4 +1,6 @@
 #include "motor_status.h"
+#include "sdkconfig.h"
+
 
 static motor_level_t max_level(motor_level_t a, motor_level_t b)
 {
@@ -26,18 +28,42 @@ motor_status_t motor_eval_status(const motor_telemetry_t *t)
         return s;
     }
 
-    // Thresholds (simples para MVP)
-    // Voltage
-    if (t->voltage_v < 200.0f) { s.flags |= FLG_UNDERVOLT; s.level = max_level(s.level, MOTOR_WARN); }
-    if (t->voltage_v > 250.0f) { s.flags |= FLG_OVERVOLT;  s.level = max_level(s.level, MOTOR_WARN); }
+        // Voltage
+    if (t->voltage_v < (float)CONFIG_THRESH_UNDERVOLT_V) {
+        s.flags |= FLG_UNDERVOLT;
+        s.level = max_level(s.level, MOTOR_WARN);
+    }
+    if (t->voltage_v > (float)CONFIG_THRESH_OVERVOLT_V) {
+        s.flags |= FLG_OVERVOLT;
+        s.level = max_level(s.level, MOTOR_WARN);
+    }
 
-    // Current
-    if (t->current_a > 12.0f)  { s.flags |= FLG_OVERCURR;  s.level = max_level(s.level, MOTOR_WARN); }
-    if (t->current_a > 18.0f)  { s.flags |= FLG_OVERCURR;  s.level = max_level(s.level, MOTOR_CRIT); }
+    // Current thresholds en A
+    float oc_warn = CONFIG_THRESH_OVERCURR_WARN_A_X100 / 100.0f;
+    float oc_crit = CONFIG_THRESH_OVERCURR_CRIT_A_X100 / 100.0f;
 
-    // Temperature
-    if (t->temp_c > 70.0f)     { s.flags |= FLG_OVERTEMP;  s.level = max_level(s.level, MOTOR_WARN); }
-    if (t->temp_c > 85.0f)     { s.flags |= FLG_OVERTEMP;  s.level = max_level(s.level, MOTOR_CRIT); }
+    if (t->current_a > oc_warn) {
+        s.flags |= FLG_OVERCURR;
+        s.level = max_level(s.level, MOTOR_WARN);
+    }
+    if (t->current_a > oc_crit) {
+        s.flags |= FLG_OVERCURR;
+        s.level = max_level(s.level, MOTOR_CRIT);
+    }
+
+    // Temperature thresholds en C
+    float ot_warn = CONFIG_THRESH_OVERTEMP_WARN_C_X10 / 10.0f;
+    float ot_crit = CONFIG_THRESH_OVERTEMP_CRIT_C_X10 / 10.0f;
+
+    if (t->temp_c > ot_warn) {
+        s.flags |= FLG_OVERTEMP;
+        s.level = max_level(s.level, MOTOR_WARN);
+    }
+    if (t->temp_c > ot_crit) {
+        s.flags |= FLG_OVERTEMP;
+        s.level = max_level(s.level, MOTOR_CRIT);
+    }
+
 
     return s;
 }
