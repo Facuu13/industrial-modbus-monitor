@@ -8,6 +8,9 @@
 #include "modbus_rtu.h"
 #include "modbus_sim.h"
 
+#include "modbus_poll.h"
+
+
 static const char *TAG = "main";
 
 // ⚠️ Elegí pines que tengas disponibles en tu ESP32-C3 devkit
@@ -51,38 +54,23 @@ static void modbus_crc_selftest(void)
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "Etapa 1.0 - RS485 raw");
+    ESP_LOGI(TAG, "Etapa 2.2 - Modelo + Poll (sim)");
 
+    // (si querés, dejá el selftest CRC acá)
     modbus_crc_selftest();
 
-    rs485_cfg_t cfg = {
-        .uart_num = UART_NUM,
-        .tx_gpio = GPIO_TX,
-        .rx_gpio = GPIO_RX,
-        .de_re_gpio = GPIO_DERE,
-        .baudrate = 9600,
-    };
-    ESP_ERROR_CHECK(rs485_init(&cfg));
-
-    // Enviar bytes de prueba (no Modbus todavía)
-    const uint8_t test_frame[] = {0xAA, 0x55, 0x01, 0x02, 0x03};
-
     while (1) {
-        ESP_LOGI(TAG, "TX raw frame...");
-        rs485_write(test_frame, sizeof(test_frame));
+        motor_telemetry_t t = {0};
+        poll_status_t st = poll_motor_sim(0x01, &t);
 
-        uint8_t rxbuf[128];
-        size_t n = 0;
-        rs485_read(rxbuf, sizeof(rxbuf), 200, &n);
-
-        if (n > 0) {
-            printf("RX (%u): ", (unsigned)n);
-            for (size_t i = 0; i < n; i++) printf("%02X ", rxbuf[i]);
-            printf("\n");
+        if (st == POLL_OK) {
+            printf("[OK] up=%us V=%.1f A=%.2f rpm=%u temp=%.1fC\n",
+                   (unsigned)t.uptime_s, t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c);
         } else {
-            ESP_LOGI(TAG, "RX: (no data)");
+            printf("[ERR] poll_status=%d\n", (int)st);
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
+
