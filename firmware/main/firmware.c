@@ -4,6 +4,7 @@
 #include "esp_log.h"
 
 #include "rs485.h"
+#include "modbus_crc.h"
 
 static const char *TAG = "main";
 
@@ -13,9 +14,21 @@ static const char *TAG = "main";
 #define GPIO_RX    5
 #define GPIO_DERE  6
 
+static void modbus_crc_selftest(void)
+{
+    // Test clásico Modbus: 01 03 00 00 00 0A -> CRC esperado en frame: C5 CD
+    // Como entero (high<<8|low) se imprime como 0xCDC5
+    const uint8_t test[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x0A};
+    uint16_t crc = modbus_crc16(test, sizeof(test));
+    printf("CRC16 = 0x%04X (esperado 0xCDC5)\n", crc);
+}
+
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "Etapa 1.0 - RS485 raw");
+
+    modbus_crc_selftest();
 
     rs485_cfg_t cfg = {
         .uart_num = UART_NUM,
