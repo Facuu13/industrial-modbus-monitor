@@ -12,6 +12,9 @@
 
 #include "transport_sim.h"
 
+#include "motor_status.h"
+
+
 
 
 static const char *TAG = "main";
@@ -66,11 +69,14 @@ void app_main(void)
         poll_status_t st = poll_motor(&tr, 0x01, &t);
 
         if (st == POLL_OK) {
-            printf("[OK] up=%us V=%.1f A=%.2f rpm=%u temp=%.1fC\n",
-                (unsigned)t.uptime_s, t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c);
+            motor_status_t ms = motor_eval_status(&t);
+            printf("[OK] up=%us V=%.1f A=%.2f rpm=%u temp=%.1fC | status=%s flags=0x%08X\n",
+                (unsigned)t.uptime_s, t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c,
+                motor_level_str(ms.level), (unsigned)ms.flags);
         } else {
             printf("[ERR] poll_status=%d\n", (int)st);
         }
+
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }

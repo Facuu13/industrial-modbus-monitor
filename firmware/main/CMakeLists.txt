@@ -8,6 +8,7 @@ idf_component_register(
          "modbus_poll.c"
          "transport_sim.c"
          "transport_rs485.c"
+         "motor_status.c"
     INCLUDE_DIRS "."
 )
 
