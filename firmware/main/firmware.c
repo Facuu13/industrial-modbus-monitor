@@ -5,6 +5,8 @@
 
 #include "rs485.h"
 #include "modbus_crc.h"
+#include "modbus_rtu.h"
+#include "modbus_sim.h"
 
 static const char *TAG = "main";
 
@@ -21,6 +23,29 @@ static void modbus_crc_selftest(void)
     const uint8_t test[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x0A};
     uint16_t crc = modbus_crc16(test, sizeof(test));
     printf("CRC16 = 0x%04X (esperado 0xCDC5)\n", crc);
+
+    uint8_t req[8];
+    size_t req_used = 0;
+
+    bool ok = modbus_rtu_build_read_holding(0x01, 0x0000, 4, req, sizeof(req), &req_used);
+    printf("build req ok=%d len=%u\n", ok, (unsigned)req_used);
+
+    uint8_t resp[64];
+    size_t resp_used = 0;
+
+    ok = modbus_sim_handle_request(req, req_used, resp, sizeof(resp), &resp_used);
+    printf("sim resp ok=%d len=%u\n", ok, (unsigned)resp_used);
+
+    uint16_t regs[16];
+    size_t regs_used = 0;
+
+    ok = modbus_rtu_parse_read_holding_resp(resp, resp_used, 0x01, regs, 16, &regs_used);
+    printf("parse ok=%d regs=%u\n", ok, (unsigned)regs_used);
+
+    for (size_t i = 0; i < regs_used; i++) {
+        printf("reg[%u]=%u\n", (unsigned)i, (unsigned)regs[i]);
+}
+
 }
 
 
