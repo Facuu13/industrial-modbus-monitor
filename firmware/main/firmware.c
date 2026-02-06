@@ -10,6 +10,9 @@
 
 #include "modbus_poll.h"
 
+#include "transport_sim.h"
+
+
 
 static const char *TAG = "main";
 
@@ -56,21 +59,21 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "Etapa 2.2 - Modelo + Poll (sim)");
 
-    // (si querés, dejá el selftest CRC acá)
-    modbus_crc_selftest();
+    transport_t tr = transport_sim_create();
 
     while (1) {
         motor_telemetry_t t = {0};
-        poll_status_t st = poll_motor_sim(0x01, &t);
+        poll_status_t st = poll_motor(&tr, 0x01, &t);
 
         if (st == POLL_OK) {
             printf("[OK] up=%us V=%.1f A=%.2f rpm=%u temp=%.1fC\n",
-                   (unsigned)t.uptime_s, t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c);
+                (unsigned)t.uptime_s, t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c);
         } else {
             printf("[ERR] poll_status=%d\n", (int)st);
         }
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+
 }
 
