@@ -25,6 +25,10 @@ static const char *TAG = "main";
 #define GPIO_RX    5
 #define GPIO_DERE  6
 
+#define COMM_FAIL_THRESHOLD 3
+static int s_comm_fail_streak = 0;
+
+
 static void modbus_crc_selftest(void)
 {
     // Test clásico Modbus: 01 03 00 00 00 0A -> CRC esperado en frame: C5 CD
@@ -69,13 +73,25 @@ void app_main(void)
         poll_status_t st = poll_motor(&tr, 0x01, &t);
 
         if (st == POLL_OK) {
-            motor_status_t ms = motor_eval_status(&t);
-            printf("[OK] up=%us V=%.1f A=%.2f rpm=%u temp=%.1fC | status=%s flags=0x%08X\n",
+            s_comm_fail_streak = 0;
+            t.comm_ok = true;
+        } else {
+            s_comm_fail_streak++;
+            t.comm_ok = (s_comm_fail_streak < COMM_FAIL_THRESHOLD);
+        }
+
+        // Evaluar estado SIEMPRE (incluso en falla)
+        motor_status_t ms = motor_eval_status(&t);
+
+        if (st == POLL_OK) {
+            printf("[POLL_OK] up=%us V=%.1f A=%.2f rpm=%u temp=%.1fC | status=%s flags=0x%08X\n",
                 (unsigned)t.uptime_s, t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c,
                 motor_level_str(ms.level), (unsigned)ms.flags);
         } else {
-            printf("[ERR] poll_status=%d\n", (int)st);
+            printf("[POLL_ERR] st=%d fail_streak=%d | status=%s flags=0x%08X\n",
+                (int)st, s_comm_fail_streak, motor_level_str(ms.level), (unsigned)ms.flags);
         }
+
 
 
         vTaskDelay(pdMS_TO_TICKS(1000));

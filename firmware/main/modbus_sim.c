@@ -2,6 +2,9 @@
 #include "modbus_crc.h"
 #include <string.h>
 
+static uint32_t s_call_count = 0;
+
+
 static uint16_t holding_regs[32] = {
     // 0..31 (hardcodeado)
     2300,  512,  1450,  123,  // ejemplo: volt*10, current*100, rpm, temp*10
@@ -22,6 +25,16 @@ bool modbus_sim_handle_request(const uint8_t *req,
                                size_t out_resp_len,
                                size_t *out_resp_used)
 {
+    s_call_count++;
+
+    // Cada 10 llamadas: simula "no response"
+    if ((s_call_count % 10) == 0) {
+        return false;
+    }
+
+    // Cada 7 llamadas: responde con CRC incorrecto
+    bool force_bad_crc = ((s_call_count % 7) == 0);
+
     if (!req || !out_resp || !out_resp_used) return false;
     *out_resp_used = 0;
 
@@ -65,8 +78,12 @@ bool modbus_sim_handle_request(const uint8_t *req,
     }
 
     uint16_t crc = modbus_crc16(out_resp, 3 + byte_count);
+    if (force_bad_crc) {
+        crc ^= 0xFFFF; // corromper CRC
+    }
     out_resp[3 + byte_count] = (uint8_t)(crc & 0xFF);
     out_resp[4 + byte_count] = (uint8_t)(crc >> 8);
+
 
     *out_resp_used = resp_len;
     return true;
