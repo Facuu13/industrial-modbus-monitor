@@ -8,6 +8,21 @@ services:
       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
       - mosq_data:/mosquitto/data
     restart: unless-stopped
+  
+  listener:
+    build:
+      context: ../backend_listener
+    container_name: industrial-listener
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      MQTT_TOPIC: industrial/modbus/+/telemetry
+      OUT_DIR: /data
+    volumes:
+      - ../data:/data
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
 
 volumes:
   mosq_data:
