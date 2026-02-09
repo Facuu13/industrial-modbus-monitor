@@ -18,6 +18,7 @@ services:
       MQTT_PORT: "1883"
       MQTT_TOPIC: industrial/modbus/+/telemetry
       OUT_DIR: /data
+      DB_PATH: /data/telemetry.db
     volumes:
       - ../data:/data
     depends_on:
