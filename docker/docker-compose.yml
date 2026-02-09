@@ -25,5 +25,19 @@ services:
       - mosquitto
     restart: unless-stopped
 
+  api:
+    build:
+      context: ../backend_api
+    container_name: industrial-api
+    environment:
+      DB_PATH: /data/telemetry.db
+    volumes:
+      - ../data:/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      - listener
+    restart: unless-stopped
+
 volumes:
   mosq_data:
