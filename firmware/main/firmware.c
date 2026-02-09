@@ -14,6 +14,10 @@
 
 #include "motor_status.h"
 
+#include "wifi_manager.h"
+#include "sdkconfig.h"
+
+
 
 
 
@@ -65,6 +69,15 @@ static void modbus_crc_selftest(void)
 void app_main(void)
 {
     ESP_LOGI(TAG, "Etapa 2.2 - Modelo + Poll (sim)");
+
+    ESP_ERROR_CHECK(wifi_manager_init_sta(CONFIG_APP_WIFI_SSID, CONFIG_APP_WIFI_PASS));
+
+    if (!wifi_manager_wait_connected(20000)) {
+        ESP_LOGE(TAG, "WiFi not connected, stopping here");
+        while (1) vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    ESP_LOGI(TAG, "WiFi connected!");
+
 
     transport_t tr = transport_sim_create();
 

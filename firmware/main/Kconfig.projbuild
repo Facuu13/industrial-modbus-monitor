@@ -31,3 +31,16 @@ config THRESH_OVERTEMP_CRIT_C_X10
     range -400 2000
 
 endmenu
+
+menu "App WiFi"
+
+config APP_WIFI_SSID
+    string "WiFi SSID"
+    default "quepasapatejode"
+
+config APP_WIFI_PASS
+    string "WiFi Password"
+    default "losvilla08"
+
+endmenu
+
