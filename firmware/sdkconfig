@@ -514,6 +514,14 @@ CONFIG_APP_WIFI_PASS="losvilla08"
 # end of App WiFi
 
 #
+# App MQTT
+#
+CONFIG_APP_MQTT_BROKER_URI="mqtt://192.168.1.11:1883"
+CONFIG_APP_MQTT_CLIENT_ID="esp32c3-modbus-001"
+CONFIG_APP_MQTT_TOPIC_BASE="industrial/modbus"
+# end of App MQTT
+
+#
 # Compiler options
 #
 CONFIG_COMPILER_OPTIMIZATION_DEBUG=y

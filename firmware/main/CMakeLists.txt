@@ -10,6 +10,7 @@ idf_component_register(
          "transport_rs485.c"
          "motor_status.c"
          "wifi_manager.c"
+         "mqtt_manager.c"
     INCLUDE_DIRS "."
 )
 

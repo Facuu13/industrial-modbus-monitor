@@ -44,3 +44,20 @@ config APP_WIFI_PASS
 
 endmenu
 
+menu "App MQTT"
+
+config APP_MQTT_BROKER_URI
+    string "MQTT Broker URI"
+    default "mqtt://192.168.1.11:1883"
+
+config APP_MQTT_CLIENT_ID
+    string "MQTT Client ID"
+    default "esp32c3-modbus-001"
+
+config APP_MQTT_TOPIC_BASE
+    string "MQTT Topic Base"
+    default "industrial/modbus"
+
+endmenu
+
+

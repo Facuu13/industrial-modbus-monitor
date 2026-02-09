@@ -17,6 +17,9 @@
 #include "wifi_manager.h"
 #include "sdkconfig.h"
 
+#include "mqtt_manager.h"
+
+
 
 
 
@@ -61,15 +64,23 @@ static void modbus_crc_selftest(void)
 
     for (size_t i = 0; i < regs_used; i++) {
         printf("reg[%u]=%u\n", (unsigned)i, (unsigned)regs[i]);
-}
+    }
 
 }
+
+static void build_topic(char *out, size_t out_len, const char *base, const char *device_id)
+{
+    // industrial/modbus/<device_id>/telemetry
+    snprintf(out, out_len, "%s/%s/telemetry", base, device_id);
+}
+
 
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "Etapa 2.2 - Modelo + Poll (sim)");
+    ESP_LOGI(TAG, "Etapa 3.2 - WiFi + MQTT + Poll (sim)");
 
+    // WiFi
     ESP_ERROR_CHECK(wifi_manager_init_sta(CONFIG_APP_WIFI_SSID, CONFIG_APP_WIFI_PASS));
 
     if (!wifi_manager_wait_connected(20000)) {
@@ -78,7 +89,14 @@ void app_main(void)
     }
     ESP_LOGI(TAG, "WiFi connected!");
 
+    // MQTT start
+    mqtt_manager_cfg_t mcfg = {
+        .broker_uri = CONFIG_APP_MQTT_BROKER_URI,
+        .client_id  = CONFIG_APP_MQTT_CLIENT_ID,
+    };
+    ESP_ERROR_CHECK(mqtt_manager_start(&mcfg));
 
+    // Transport (sim)
     transport_t tr = transport_sim_create();
 
     while (1) {
@@ -93,22 +111,45 @@ void app_main(void)
             t.comm_ok = (s_comm_fail_streak < COMM_FAIL_THRESHOLD);
         }
 
-        // Evaluar estado SIEMPRE (incluso en falla)
+        // Estado SIEMPRE
         motor_status_t ms = motor_eval_status(&t);
 
         if (st == POLL_OK) {
+            // Log
             printf("[POLL_OK] up=%us V=%.1f A=%.2f rpm=%u temp=%.1fC | status=%s flags=0x%08X\n",
-                (unsigned)t.uptime_s, t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c,
-                motor_level_str(ms.level), (unsigned)ms.flags);
+                   (unsigned)t.uptime_s, t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c,
+                   motor_level_str(ms.level), (unsigned)ms.flags);
+
+            // MQTT publish (solo si conectado)
+            if (mqtt_manager_is_connected()) {
+                char topic[128];
+                build_topic(topic, sizeof(topic), CONFIG_APP_MQTT_TOPIC_BASE, CONFIG_APP_MQTT_CLIENT_ID);
+
+                char payload[256];
+                snprintf(payload, sizeof(payload),
+                         "{\"device_id\":\"%s\",\"uptime_s\":%u,"
+                         "\"voltage_v\":%.1f,\"current_a\":%.2f,\"rpm\":%u,\"temp_c\":%.1f,"
+                         "\"level\":\"%s\",\"flags\":%u}",
+                         CONFIG_APP_MQTT_CLIENT_ID,
+                         (unsigned)t.uptime_s,
+                         t.voltage_v, t.current_a, (unsigned)t.rpm, t.temp_c,
+                         motor_level_str(ms.level),
+                         (unsigned)ms.flags);
+
+                mqtt_manager_publish(topic, payload, 0, 0);
+                ESP_LOGI(TAG, "MQTT pub -> %s", topic);
+            } else {
+                ESP_LOGW(TAG, "MQTT not connected yet");
+            }
+
         } else {
+            // Log de error de poll
             printf("[POLL_ERR] st=%d fail_streak=%d | status=%s flags=0x%08X\n",
-                (int)st, s_comm_fail_streak, motor_level_str(ms.level), (unsigned)ms.flags);
+                   (int)st, s_comm_fail_streak, motor_level_str(ms.level), (unsigned)ms.flags);
         }
-
-
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
-
 }
+
 
